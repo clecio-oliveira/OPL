@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Interactive Attachment C Timeline</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#eef1f5;
+  --panel:#f5f6f8;
+  --panel-2:#f0f2f5;
+  --grid:#d9dee6;
+  --grid-strong:#c8ced8;
+  --text:#475467;
+  --muted:#7a8599;
+  --today:#e05347;
+
+  --left-col:280px;
+  --row-h:28px;
+  --group-h:24px;
+  --bar-h:14px;
+  --radius:14px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  padding:18px;
+}
+
+.toolbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:12px;
+  flex-wrap:wrap;
+}
+
+.toolbar-left{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.toolbar-title{
+  font-size:18px;
+  font-weight:700;
+  color:#344054;
+}
+
+.toolbar-note{
+  font-size:12px;
+  color:var(--muted);
+}
+
+.toolbar-right{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+button{
+  border:1px solid var(--grid-strong);
+  background:white;
+  color:#344054;
+  border-radius:10px;
+  padding:8px 12px;
+  font:600 12px/1 Inter,sans-serif;
+  cursor:pointer;
+}
+
+button:hover{
+  background:#f8fafc;
+}
+
+.gantt-wrap{
+  width:100%;
+  overflow-x:auto;
+}
+
+.gantt{
+  min-width:1900px;
+  background:var(--panel);
+  border:1px solid var(--grid-strong);
+  border-radius:var(--radius);
+  overflow:hidden;
+}
+
+.thead{
+  display:flex;
+  background:var(--panel);
+  border-bottom:1px solid var(--grid-strong);
+}
+
+.thead-left{
+  width:var(--left-col);
+  flex-shrink:0;
+  border-right:1px solid var(--grid-strong);
+}
+
+.thead-top,
+.thead-bot{
+  display:flex;
+  align-items:center;
+  padding:0 12px;
+  color:#6b7280;
+  font-size:11px;
+  font-weight:600;
+}
+
+.thead-top{
+  height:34px;
+  border-bottom:1px solid var(--grid);
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+
+.thead-bot{
+  height:28px;
+}
+
+.thead-right{
+  flex:1;
+  position:relative;
+}
+
+.mo-row{
+  display:flex;
+  height:34px;
+  border-bottom:1px solid var(--grid);
+}
+
+.mo-cell{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:none;
+  border-right:1px solid var(--grid-strong);
+  color:#7a8599;
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:.02em;
+  text-transform:uppercase;
+}
+
+.mo-cell:last-child{
+  border-right:none;
+}
+
+.dt-row{
+  height:28px;
+  position:relative;
+}
+
+.dt-tick{
+  position:absolute;
+  top:0;
+  bottom:0;
+  transform:translateX(-50%);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#8b95a7;
+  font-size:11px;
+  font-weight:600;
+  white-space:nowrap;
+}
+
+.today-header{
+  position:absolute;
+  top:0;
+  bottom:0;
+  transform:translateX(-50%);
+  display:flex;
+  align-items:center;
+  z-index:4;
+}
+
+.today-chip{
+  background:#fff;
+  color:var(--today);
+  border:1px solid rgba(224,83,71,.35);
+  border-radius:999px;
+  font-size:10px;
+  font-weight:700;
+  padding:2px 8px;
+}
+
+.group-row{
+  display:flex;
+  height:var(--group-h);
+  background:#f7f8fa;
+  border-top:1px solid var(--grid);
+  border-bottom:1px solid var(--grid);
+}
+
+.group-label-cell{
+  width:var(--left-col);
+  flex-shrink:0;
+  border-right:1px solid var(--grid-strong);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:0 12px;
+}
+
+.group-dot{
+  width:8px;
+  height:8px;
+  border-radius:2px;
+  flex-shrink:0;
+}
+
+.group-label{
+  font-size:11px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+
+.group-bar-area{
+  flex:1;
+  position:relative;
+}
+
+.task-row{
+  display:flex;
+  height:var(--row-h);
+  border-bottom:1px solid var(--grid);
+  background:transparent;
+}
+
+.task-left{
+  width:var(--left-col);
+  flex-shrink:0;
+  border-right:1px solid var(--grid);
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:0 10px 0 12px;
+}
+
+.task-num{
+  min-width:26px;
+  font-size:11px;
+  color:#6f7a8d;
+  font-weight:600;
+}
+
+.task-name{
+  flex:1;
+  font-size:11px;
+  line-height:1.15;
+  color:#4a5568;
+}
+
+.ms-pill{
+  font-size:9px;
+  font-weight:700;
+  padding:2px 6px;
+  border-radius:999px;
+  white-space:nowrap;
+}
+
+.bar-area{
+  flex:1;
+  position:relative;
+  overflow:hidden;
+}
+
+.grid-v{
+  position:absolute;
+  top:0;
+  bottom:0;
+  width:1px;
+  background:var(--grid);
+  pointer-events:none;
+}
+
+.grid-v.month{
+  background:var(--grid-strong);
+}
+
+.today-line{
+  position:absolute;
+  top:0;
+  bottom:0;
+  width:2px;
+  background:var(--today);
+  z-index:3;
+  pointer-events:none;
+}
+
+.task-bar,
+.ms-bar{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  height:var(--bar-h);
+  border-radius:999px;
+  z-index:5;
+}
+
+.task-bar{
+  opacity:.95;
+}
+
+.ms-bar{
+  opacity:.22;
+}
+
+.bar-shell{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  height:20px;
+  z-index:7;
+}
+
+.drag-bar{
+  position:absolute;
+  inset:3px 0 3px 0;
+  border-radius:999px;
+  cursor:grab;
+  touch-action:none;
+  box-shadow:0 1px 0 rgba(0,0,0,.05);
+}
+
+.drag-bar:active{
+  cursor:grabbing;
+}
+
+.resize-handle{
+  position:absolute;
+  top:0;
+  width:10px;
+  height:20px;
+  z-index:8;
+  cursor:ew-resize;
+  touch-action:none;
+}
+
+.resize-handle.left{
+  left:-2px;
+}
+
+.resize-handle.right{
+  right:-2px;
+}
+
+.resize-handle::after{
+  content:"";
+  position:absolute;
+  top:4px;
+  bottom:4px;
+  left:3px;
+  right:3px;
+  border-radius:999px;
+  background:rgba(255,255,255,.7);
+}
+
+.ms-dia{
+  position:absolute;
+  top:50%;
+  width:12px;
+  height:12px;
+  transform:translate(-50%,-50%) rotate(45deg);
+  border-radius:2px;
+  z-index:6;
+  cursor:grab;
+  touch-action:none;
+}
+
+.ms-dia:active{
+  cursor:grabbing;
+}
+
+.tooltip{
+  position:fixed;
+  z-index:999;
+  background:#111827;
+  color:white;
+  font-size:12px;
+  font-weight:600;
+  padding:8px 10px;
+  border-radius:8px;
+  pointer-events:none;
+  white-space:nowrap;
+  box-shadow:0 8px 24px rgba(0,0,0,.18);
+  opacity:0;
+  transform:translateY(-4px);
+  transition:opacity .12s ease, transform .12s ease;
+}
+
+.tooltip.show{
+  opacity:1;
+  transform:translateY(0);
+}
+
+.legend{
+  display:flex;
+  align-items:center;
+  gap:18px;
+  margin-top:12px;
+  padding:0 4px;
+  color:#6f7a8d;
+  font-size:12px;
+  flex-wrap:wrap;
+}
+
+.legend-item{
+  display:flex;
+  align-items:center;
+  gap:7px;
+}
+
+.leg-line{
+  width:16px;
+  height:2px;
+  background:var(--today);
+}
+
+.leg-dia{
+  width:9px;
+  height:9px;
+  background:#7f8aa0;
+  transform:rotate(45deg);
+  border-radius:1px;
+}
+
+.leg-bar{
+  width:20px;
+  height:10px;
+  border-radius:999px;
+  background:#aeb7c5;
+}
+
+.output{
+  margin-top:14px;
+  background:white;
+  border:1px solid var(--grid-strong);
+  border-radius:12px;
+  padding:12px;
+}
+
+.output h3{
+  font-size:13px;
+  margin-bottom:8px;
+  color:#344054;
+}
+
+.output textarea{
+  width:100%;
+  min-height:180px;
+  border:1px solid var(--grid);
+  border-radius:10px;
+  padding:10px;
+  font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;
+  resize:vertical;
+  background:#fbfcfe;
+}
+
+@media (max-width:1100px){
+  .gantt{min-width:1700px}
+}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="toolbar-left">
+    <div class="toolbar-title">Interactive Timeline</div>
+    <div class="toolbar-note">Drag bars to move. Drag edges to resize. Drag milestone diamonds to change the date.</div>
+  </div>
+  <div class="toolbar-right">
+    <button id="resetBtn" type="button">Reset</button>
+    <button id="exportBtn" type="button">Export dates</button>
+  </div>
+</div>
+
+<div class="gantt-wrap">
+  <div class="gantt" id="gantt"></div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="leg-line"></div><span>Today</span></div>
+  <div class="legend-item"><div class="leg-dia"></div><span>Milestone</span></div>
+  <div class="legend-item"><div class="leg-bar"></div><span>Task duration</span></div>
+</div>
+
+<div class="output">
+  <h3>Updated task dates</h3>
+  <textarea id="exportBox" readonly></textarea>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+(function () {
+  const START = new Date(2026, 0, 1);
+  const END = new Date(2026, 6, 1);
+  const TODAY = new Date(2026, 2, 31);
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+  const TOTAL_DAYS = Math.round((END - START) / MS_PER_DAY);
+
+  const months = [
+    { year: 2026, mo: 0, label: "JAN '26", days: 31 },
+    { year: 2026, mo: 1, label: "FEB '26", days: 28 },
+    { year: 2026, mo: 2, label: "MAR '26", days: 31 },
+    { year: 2026, mo: 3, label: "APR '26", days: 30 },
+    { year: 2026, mo: 4, label: "MAY '26", days: 31 },
+    { year: 2026, mo: 5, label: "JUN '26", days: 30 }
+  ];
+
+  const initialGroups = [
+    {
+      label: "PROJECT PLANNING",
+      color: "#a67cf2",
+      tasks: [
+        { id: 0, name: "Pre-Implementation Discussions", start: "2025-11-13", end: "2026-04-15", milestone: false },
+        { id: 1, name: "Project Plan", start: "2026-01-20", end: "2026-04-15", milestone: false }
+      ]
+    },
+    {
+      label: "ACCOUNT CONFIGURATION",
+      color: "#5fa7ea",
+      tasks: [
+        { id: 2, name: "OOTB Config & Integration Instructions", start: "2026-01-20", end: "2026-03-22", milestone: false },
+        { id: 3, name: "OOTB Configuration (Production)", start: "2026-01-20", end: "2026-03-15", milestone: false },
+        { id: 4, name: "OOTB Config & Accessibility Review", start: "2026-03-10", end: "2026-04-08", milestone: false },
+        { id: 5, name: "OOTB Config & Accessibility Adjustments", start: "2026-03-17", end: "2026-04-15", milestone: false },
+        { id: 6, name: "OOTB Configuration Validation", start: "2026-03-24", end: "2026-04-22", milestone: false }
+      ]
+    },
+    {
+      label: "TEST ENVIRONMENT",
+      color: "#6fd0c9",
+      tasks: [
+        { id: 7, name: "Test Environment (Sandbox) Ready", start: "2026-03-27", end: "2026-04-29", milestone: true, milestoneAtEnd: true }
+      ]
+    },
+    {
+      label: "DATA MIGRATION",
+      color: "#e8b089",
+      tasks: [
+        { id: 8, name: "Data Migration & Validation (Production)", start: "2026-03-31", end: "2026-04-29", milestone: true, milestoneAtEnd: true }
+      ]
+    },
+    {
+      label: "USER TRAINING, TESTING & VALIDATIONS",
+      color: "#59c57d",
+      tasks: [
+        { id: 9,  name: "OOTB Integrations Config & Testing (Sandbox)", start: "2026-03-31", end: "2026-04-06", milestone: false },
+        { id: 10, name: "Staff Training, Wave 1 (Foundational)", start: "2026-03-31", end: "2026-04-06", milestone: false },
+        { id: 11, name: "Staff Training, Wave 1 (Advanced/Make-up)", start: "2026-04-07", end: "2026-04-13", milestone: false },
+        { id: 13, name: "User Acceptance Testing (UAT) (Sandbox)", start: "2026-04-07", end: "2026-04-20", milestone: false },
+        { id: 14, name: "OOTB Integrations Config & Testing (Prod)", start: "2026-04-07", end: "2026-04-13", milestone: false },
+        { id: 15, name: "Security & Privacy Validation (Prod)", start: "2026-04-07", end: "2026-04-13", milestone: false },
+        { id: 16, name: "Cutover Planning & Runbooks", start: "2026-04-14", end: "2026-04-27", milestone: false }
+      ]
+    },
+    {
+      label: "INTERNAL SOFT LAUNCH & PRACTICE",
+      color: "#ef8db8",
+      tasks: [
+        { id: 17, name: "Internal Soft Launch / Staff-Only (Prod)", start: "2026-05-01", end: "2026-05-01", milestone: true },
+        { id: 18, name: "Stabilization & Staff Practice (Prod)", start: "2026-05-01", end: "2026-05-18", milestone: false }
+      ]
+    },
+    {
+      label: "PUBLIC LAUNCH / GO-LIVE",
+      color: "#f18484",
+      tasks: [
+        { id: 19, name: "Final Go/No-Go Readiness Review", start: "2026-05-19", end: "2026-05-21", milestone: false },
+        { id: 20, name: "Public Launch / Go-Live (Production)", start: "2026-06-01", end: "2026-06-01", milestone: true }
+      ]
+    },
+    {
+      label: "POST-LAUNCH",
+      color: "#74dced",
+      tasks: [
+        { id: 21, name: "Hypercare", start: "2026-06-01", end: "2026-06-15", milestone: false },
+        { id: 22, name: "Post-Implementation Review", start: "2026-06-16", end: "2026-06-29", milestone: false }
+      ]
+    }
+  ];
+
+  const state = {
+    groups: deepClone(initialGroups),
+    activeDrag: null
+  };
+
+  const gantt = document.getElementById("gantt");
+  const tooltip = document.getElementById("tooltip");
+  const exportBox = document.getElementById("exportBox");
+  const resetBtn = document.getElementById("resetBtn");
+  const exportBtn = document.getElementById("exportBtn");
+
+  function deepClone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+
+  function parseLocalDate(dateStr) {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  }
+
+  function formatDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+
+  function labelDate(dateStr) {
+    const d = parseLocalDate(dateStr);
+    return d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    });
+  }
+
+  function dayIndexFromDate(dateStr) {
+    const d = parseLocalDate(dateStr);
+    return Math.round((d - START) / MS_PER_DAY);
+  }
+
+  function clampDay(day) {
+    return Math.max(0, Math.min(TOTAL_DAYS - 1, day));
+  }
+
+  function dateFromDayIndex(day) {
+    const d = new Date(START.getTime() + clampDay(day) * MS_PER_DAY);
+    return formatDate(d);
+  }
+
+  function pctFromDay(day) {
+    return (clampDay(day) / TOTAL_DAYS) * 100;
+  }
+
+  function totalMonthDays() {
+    return months.reduce((sum, m) => sum + m.days, 0);
+  }
+
+  function monthWidths() {
+    let accDays = 0;
+    const td = totalMonthDays();
+    return months.map(m => {
+      const left = (accDays / td) * 100;
+      accDays += m.days;
+      return { ...m, left, width: (m.days / td) * 100 };
+    });
+  }
+
+  function buildTicks() {
+    const ticks = [];
+    months.forEach(m => {
+      [1, 8, 15, 22, 29].forEach(day => {
+        if (day <= m.days) {
+          const d = new Date(m.year, m.mo, day);
+          if (d >= START && d < END) {
+            ticks.push({
+              dayIndex: Math.round((d - START) / MS_PER_DAY),
+              left: ((d - START) / (END - START)) * 100,
+              label: day
+            });
+          }
+        }
+      });
+    });
+    return ticks;
+  }
+
+  function flattenTasks() {
+    const out = [];
+    state.groups.forEach((group, groupIndex) => {
+      group.tasks.forEach((task, taskIndex) => {
+        out.push({ groupIndex, taskIndex, group, task });
+      });
+    });
+    return out;
+  }
+
+  function updateExportBox() {
+    const lines = [];
+    flattenTasks().forEach(({ task }) => {
+      lines.push(`#${task.id} | ${task.name} | ${task.start} → ${task.end}`);
+    });
+    exportBox.value = lines.join("\n");
+  }
+
+  function showTooltip(text, x, y) {
+    tooltip.textContent = text;
+    tooltip.style.left = `${x + 12}px`;
+    tooltip.style.top = `${y - 12}px`;
+    tooltip.classList.add("show");
+  }
+
+  function hideTooltip() {
+    tooltip.classList.remove("show");
+  }
+
+  function getBarAreaWidth() {
+    const barArea = gantt.querySelector(".bar-area");
+    return barArea ? barArea.getBoundingClientRect().width : 1;
+  }
+
+  function pxToDayDelta(px) {
+    return Math.round((px / getBarAreaWidth()) * TOTAL_DAYS);
+  }
+
+  function dragLabel(task) {
+    return `${task.name}\n${labelDate(task.start)} → ${labelDate(task.end)}`;
+  }
+
+  function render() {
+    const mWidths = monthWidths();
+    const ticks = buildTicks();
+    const todayPct = ((TODAY - START) / (END - START)) * 100;
+
+    let monthHtml = "";
+    mWidths.forEach(m => {
+      monthHtml += `<div class="mo-cell" style="width:${m.width}%">${m.label}</div>`;
+    });
+
+    let tickHtml = `<div class="today-header" style="left:${todayPct}%"><div class="today-chip">TODAY</div></div>`;
+    ticks.forEach(t => {
+      tickHtml += `<div class="dt-tick" style="left:${t.left}%">${t.label}</div>`;
+    });
+
+    gantt.innerHTML = `
+      <div class="thead">
+        <div class="thead-left">
+          <div class="thead-top">PHASE / TASK</div>
+          <div class="thead-bot">Day</div>
+        </div>
+        <div class="thead-right">
+          <div class="mo-row">${monthHtml}</div>
+          <div class="dt-row">${tickHtml}</div>
+        </div>
+      </div>
+    `;
+
+    let gridHtml = "";
+    ticks.forEach(t => {
+      gridHtml += `<div class="grid-v" style="left:${t.left}%"></div>`;
+    });
+    mWidths.forEach(m => {
+      if (m.left > 0) {
+        gridHtml += `<div class="grid-v month" style="left:${m.left}%"></div>`;
+      }
+    });
+
+    const todayLine = `<div class="today-line" style="left:${todayPct}%"></div>`;
+
+    state.groups.forEach((group, groupIndex) => {
+      const groupRow = document.createElement("div");
+      groupRow.className = "group-row";
+      groupRow.innerHTML = `
+        <div class="group-label-cell">
+          <div class="group-dot" style="background:${group.color}"></div>
+          <div class="group-label" style="color:${group.color}">${group.label}</div>
+        </div>
+        <div class="group-bar-area">
+          ${gridHtml}
+          ${todayLine}
+        </div>
+      `;
+      gantt.appendChild(groupRow);
+
+      group.tasks.forEach((task, taskIndex) => {
+        const startDay = clampDay(dayIndexFromDate(task.start));
+        const endDay = clampDay(dayIndexFromDate(task.end));
+        const left = pctFromDay(startDay);
+        const right = pctFromDay(endDay);
+        const width = Math.max(((Math.max(endDay - startDay, 0) + 1) / TOTAL_DAYS) * 100, 0.55);
+
+        const pill = task.milestone
+          ? `<span class="ms-pill" style="background:${group.color}22;color:${group.color};border:1px solid ${group.color}44">MS</span>`
+          : "";
+
+        const row = document.createElement("div");
+        row.className = "task-row";
+
+        let barMarkup = "";
+
+        if (task.milestone) {
+          if (task.milestoneAtEnd && endDay > startDay) {
+            barMarkup = `
+              <div class="ms-bar" style="left:${left}%;width:${width}%;background:${group.color}"></div>
+              <div class="bar-shell" style="left:${left}%;width:${width}%;">
+                <div class="drag-bar"
+                     data-action="move"
+                     data-group-index="${groupIndex}"
+                     data-task-index="${taskIndex}"
+                     style="background:${group.color}; opacity:.01;"></div>
+                <div class="resize-handle left"
+                     data-action="resize-left"
+                     data-group-index="${groupIndex}"
+                     data-task-index="${taskIndex}"></div>
+              </div>
+              <div class="ms-dia"
+                   data-action="resize-right"
+                   data-group-index="${groupIndex}"
+                   data-task-index="${taskIndex}"
+                   style="left:${pctFromDay(endDay)}%;background:${group.color}"></div>
+            `;
+          } else {
+            barMarkup = `
+              <div class="ms-dia"
+                   data-action="move-milestone"
+                   data-group-index="${groupIndex}"
+                   data-task-index="${taskIndex}"
+                   style="left:${pctFromDay(startDay)}%;background:${group.color}"></div>
+            `;
+          }
+        } else {
+          barMarkup = `
+            <div class="task-bar" style="left:${left}%;width:${width}%;background:${group.color}"></div>
+            <div class="bar-shell" style="left:${left}%;width:${width}%;">
+              <div class="drag-bar"
+                   data-action="move"
+                   data-group-index="${groupIndex}"
+                   data-task-index="${taskIndex}"
+                   style="background:${group.color};"></div>
+              <div class="resize-handle left"
+                   data-action="resize-left"
+                   data-group-index="${groupIndex}"
+                   data-task-index="${taskIndex}"></div>
+              <div class="resize-handle right"
+                   data-action="resize-right"
+                   data-group-index="${groupIndex}"
+                   data-task-index="${taskIndex}"></div>
+            </div>
+          `;
+        }
+
+        row.innerHTML = `
+          <div class="task-left">
+            <span class="task-num">#${task.id}</span>
+            <span class="task-name">${task.name}</span>
+            ${pill}
+          </div>
+          <div class="bar-area">
+            ${gridHtml}
+            ${todayLine}
+            ${barMarkup}
+          </div>
+        `;
+
+        gantt.appendChild(row);
+      });
+    });
+
+    bindInteractions();
+    updateExportBox();
+  }
+
+  function startInteraction(e, action, groupIndex, taskIndex) {
+    const task = state.groups[groupIndex].tasks[taskIndex];
+    state.activeDrag = {
+      action,
+      groupIndex,
+      taskIndex,
+      startX: e.clientX,
+      originalStartDay: clampDay(dayIndexFromDate(task.start)),
+      originalEndDay: clampDay(dayIndexFromDate(task.end))
+    };
+
+    showTooltip(dragLabel(task), e.clientX, e.clientY);
+  }
+
+  function onPointerDown(e) {
+    const target = e.target.closest("[data-action]");
+    if (!target) return;
+
+    e.preventDefault();
+
+    const action = target.dataset.action;
+    const groupIndex = Number(target.dataset.groupIndex);
+    const taskIndex = Number(target.dataset.taskIndex);
+
+    startInteraction(e, action, groupIndex, taskIndex);
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+  }
+
+  function onPointerMove(e) {
+    if (!state.activeDrag) return;
+
+    const drag = state.activeDrag;
+    const task = state.groups[drag.groupIndex].tasks[drag.taskIndex];
+    const deltaDays = pxToDayDelta(e.clientX - drag.startX);
+
+    if (drag.action === "move") {
+      const duration = Math.max(drag.originalEndDay - drag.originalStartDay, 0);
+      let newStart = clampDay(drag.originalStartDay + deltaDays);
+      let newEnd = clampDay(newStart + duration);
+
+      if (newEnd >= TOTAL_DAYS) {
+        newEnd = TOTAL_DAYS - 1;
+        newStart = Math.max(0, newEnd - duration);
+      }
+
+      task.start = dateFromDayIndex(newStart);
+      task.end = dateFromDayIndex(newEnd);
+    }
+
+    if (drag.action === "resize-left") {
+      let newStart = clampDay(drag.originalStartDay + deltaDays);
+      const maxStart = drag.originalEndDay;
+      if (newStart > maxStart) newStart = maxStart;
+
+      task.start = dateFromDayIndex(newStart);
+    }
+
+    if (drag.action === "resize-right") {
+      let newEnd = clampDay(drag.originalEndDay + deltaDays);
+      const minEnd = drag.originalStartDay;
+      if (newEnd < minEnd) newEnd = minEnd;
+
+      task.end = dateFromDayIndex(newEnd);
+    }
+
+    if (drag.action === "move-milestone") {
+      const newDay = clampDay(drag.originalStartDay + deltaDays);
+      const newDate = dateFromDayIndex(newDay);
+      task.start = newDate;
+      task.end = newDate;
+    }
+
+    render();
+    showTooltip(dragLabel(task), e.clientX, e.clientY);
+  }
+
+  function onPointerUp() {
+    state.activeDrag = null;
+    hideTooltip();
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerup", onPointerUp);
+  }
+
+  function bindInteractions() {
+    gantt.removeEventListener("pointerdown", onPointerDown);
+    gantt.addEventListener("pointerdown", onPointerDown);
+
+    gantt.querySelectorAll("[data-action]").forEach(el => {
+      el.addEventListener("mouseenter", () => {
+        const groupIndex = Number(el.dataset.groupIndex);
+        const taskIndex = Number(el.dataset.taskIndex);
+        const task = state.groups[groupIndex].tasks[taskIndex];
+        const rect = el.getBoundingClientRect();
+        showTooltip(dragLabel(task), rect.left + rect.width / 2, rect.top);
+      });
+      el.addEventListener("mouseleave", () => {
+        if (!state.activeDrag) hideTooltip();
+      });
+    });
+  }
+
+  resetBtn.addEventListener("click", () => {
+    state.groups = deepClone(initialGroups);
+    render();
+  });
+
+  exportBtn.addEventListener("click", async () => {
+    updateExportBox();
+    exportBox.select();
+    try {
+      await navigator.clipboard.writeText(exportBox.value);
+      exportBtn.textContent = "Copied";
+      setTimeout(() => exportBtn.textContent = "Export dates", 1200);
+    } catch (err) {
+      exportBtn.textContent = "Select text below";
+      setTimeout(() => exportBtn.textContent = "Export dates", 1400);
+    }
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>

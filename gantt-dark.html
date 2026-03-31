@@ -17,11 +17,11 @@
   --muted:#7a8599;
   --today:#e05347;
 
-  --left-col: 280px;
-  --row-h: 28px;
-  --group-h: 24px;
-  --bar-h: 14px;
-  --radius: 14px;
+  --left-col:280px;
+  --row-h:28px;
+  --group-h:24px;
+  --bar-h:14px;
+  --radius:14px;
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -46,7 +46,6 @@ body{
   overflow:hidden;
 }
 
-/* HEADER */
 .thead{
   display:flex;
   background:var(--panel);
@@ -104,7 +103,9 @@ body{
   text-transform:uppercase;
 }
 
-.mo-cell:last-child{border-right:none}
+.mo-cell:last-child{
+  border-right:none;
+}
 
 .dt-row{
   height:28px;
@@ -145,7 +146,6 @@ body{
   padding:2px 8px;
 }
 
-/* GROUP ROW */
 .group-row{
   display:flex;
   height:var(--group-h);
@@ -183,7 +183,6 @@ body{
   position:relative;
 }
 
-/* TASK ROWS */
 .task-row{
   display:flex;
   height:var(--row-h);
@@ -315,7 +314,7 @@ body{
   background:#aeb7c5;
 }
 
-@media (max-width: 1100px){
+@media (max-width:1100px){
   .gantt{min-width:1700px}
 }
 </style>
@@ -335,7 +334,7 @@ body{
 <script>
 (function () {
   const START = new Date(2026, 0, 1);
-  const END = new Date(2026, 6, 1); // Jul 1 exclusive
+  const END = new Date(2026, 6, 1);
   const TODAY = new Date(2026, 2, 31);
   const SPAN = END - START;
 
@@ -387,10 +386,10 @@ body{
       label: "ACCOUNT CONFIGURATION",
       color: "#5fa7ea",
       tasks: [
-        { id: 2, name: "OOTB Config & Integration Instructions", start: "2026-01-20", end: "2026-02-28" },
-        { id: 3, name: "OOTB Configuration (Production)", start: "2026-01-20", end: "2026-03-09" },
-        { id: 4, name: "OOTB Config & Accessibility Review", start: "2026-03-10", end: "2026-03-16" },
-        { id: 5, name: "OOTB Config & Accessibility Adjustments", start: "2026-03-17", end: "2026-04-01" },
+        { id: 2, name: "OOTB Config & Integration Instructions", start: "2026-01-20", end: "2026-03-22" },
+        { id: 3, name: "OOTB Configuration (Production)", start: "2026-01-20", end: "2026-03-15" },
+        { id: 4, name: "OOTB Config & Accessibility Review", start: "2026-03-10", end: "2026-04-08" },
+        { id: 5, name: "OOTB Config & Accessibility Adjustments", start: "2026-03-17", end: "2026-04-15" },
         { id: 6, name: "OOTB Configuration Validation", start: "2026-03-24", end: "2026-04-22" }
       ]
     },
@@ -398,14 +397,14 @@ body{
       label: "TEST ENVIRONMENT",
       color: "#6fd0c9",
       tasks: [
-        { id: 7, name: "Test Environment (Sandbox) Ready", start: "2026-03-27", end: "2026-03-31", milestone: true }
+        { id: 7, name: "Test Environment (Sandbox) Ready", start: "2026-03-27", end: "2026-04-29", milestone: true, milestoneAtEnd: true }
       ]
     },
     {
       label: "DATA MIGRATION",
       color: "#e8b089",
       tasks: [
-        { id: 8, name: "Data Migration & Validation (Production)", start: "2026-03-31", end: "2026-04-27", milestone: true, milestoneAtEnd: true }
+        { id: 8, name: "Data Migration & Validation (Production)", start: "2026-03-31", end: "2026-04-29", milestone: true, milestoneAtEnd: true }
       ]
     },
     {
@@ -546,6 +545,6 @@ body{
   });
 })();
 </script>
+
 </body>
 </html>
-

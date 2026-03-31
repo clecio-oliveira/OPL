@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Interactive Timeline with Phase Filter</title>
+<title>Interactive Timeline with Collapsible Controls</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
@@ -280,11 +280,34 @@ button:hover{
   text-overflow:ellipsis;
 }
 
-.row-controls{
+.row-controls-wrap{
   display:flex;
   align-items:center;
   gap:6px;
   flex-shrink:0;
+}
+
+.row-toggle-btn{
+  padding:5px 8px;
+  border-radius:8px;
+  font-size:11px;
+  line-height:1;
+}
+
+.row-controls{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  overflow:hidden;
+  max-width:260px;
+  opacity:1;
+  transition:max-width .22s ease, opacity .18s ease, margin .18s ease;
+}
+
+.row-controls.is-collapsed{
+  max-width:0;
+  opacity:0;
+  pointer-events:none;
 }
 
 .row-mini-btn{
@@ -511,7 +534,7 @@ button:hover{
   const TODAY = new Date(2026, 2, 31);
   const MS_PER_DAY = 24 * 60 * 60 * 1000;
   const TOTAL_DAYS = Math.round((END - START) / MS_PER_DAY);
-  const STORAGE_KEY = "interactive_timeline_multi_bars_v2";
+  const STORAGE_KEY = "interactive_timeline_multi_bars_v3";
 
   const months = [
     { year: 2026, mo: 0, label: "JAN '26", days: 31 },
@@ -599,7 +622,8 @@ button:hover{
     groups: deepClone(initialGroups),
     activeDrag: null,
     selected: null,
-    phaseFilter: "ALL"
+    phaseFilter: "ALL",
+    rowControlsOpen: {}
   };
 
   const gantt = document.getElementById("gantt");
@@ -705,7 +729,8 @@ button:hover{
   function serializeState() {
     return {
       groups: state.groups,
-      phaseFilter: state.phaseFilter
+      phaseFilter: state.phaseFilter,
+      rowControlsOpen: state.rowControlsOpen
     };
   }
 
@@ -770,6 +795,7 @@ button:hover{
       color: defaultColor
     });
     state.selected = { groupIndex, taskIndex, barIndex: task.bars.length - 1 };
+    state.rowControlsOpen[`${groupIndex}-${taskIndex}`] = true;
     render();
   }
 
@@ -794,6 +820,16 @@ button:hover{
     if (!bar) return;
     bar.color = value;
     render();
+  }
+
+  function toggleRowControls(groupIndex, taskIndex) {
+    const key = `${groupIndex}-${taskIndex}`;
+    state.rowControlsOpen[key] = !state.rowControlsOpen[key];
+    render();
+  }
+
+  function isRowControlsOpen(groupIndex, taskIndex) {
+    return !!state.rowControlsOpen[`${groupIndex}-${taskIndex}`];
   }
 
   function render() {
@@ -891,21 +927,33 @@ button:hover{
           `;
         });
 
+        const isOpen = isRowControlsOpen(groupIndex, taskIndex);
+        const toggleText = isOpen ? "Controls ▾" : "Controls ▸";
+
         const row = document.createElement("div");
         row.className = "task-row";
         row.innerHTML = `
           <div class="task-left">
             <span class="task-num">#${task.id}</span>
             <span class="task-name">${task.name}</span>
-            <div class="row-controls">
-              <button class="row-mini-btn add-bar-btn" data-group-index="${groupIndex}" data-task-index="${taskIndex}" type="button">+ Bar</button>
-              <button class="row-mini-btn del-bar-btn" data-group-index="${groupIndex}" data-task-index="${taskIndex}" type="button">Delete</button>
-              <input class="row-color color-input" type="color"
-                     data-group-index="${groupIndex}" data-task-index="${taskIndex}"
-                     value="${selectedBar ? selectedBar.color : (task.bars[0]?.color || group.color)}" />
-              <span class="row-status">${selectedBar ? "selected" : "none"}</span>
+
+            <div class="row-controls-wrap">
+              <button class="row-toggle-btn toggle-controls-btn"
+                      data-group-index="${groupIndex}"
+                      data-task-index="${taskIndex}"
+                      type="button">${toggleText}</button>
+
+              <div class="row-controls ${isOpen ? "" : "is-collapsed"}">
+                <button class="row-mini-btn add-bar-btn" data-group-index="${groupIndex}" data-task-index="${taskIndex}" type="button">+ Bar</button>
+                <button class="row-mini-btn del-bar-btn" data-group-index="${groupIndex}" data-task-index="${taskIndex}" type="button">Delete</button>
+                <input class="row-color color-input" type="color"
+                       data-group-index="${groupIndex}" data-task-index="${taskIndex}"
+                       value="${selectedBar ? selectedBar.color : (task.bars[0]?.color || group.color)}" />
+                <span class="row-status">${selectedBar ? "selected" : "none"}</span>
+              </div>
             </div>
           </div>
+
           <div class="bar-area">
             ${gridHtml}
             ${todayLine}
@@ -932,6 +980,7 @@ button:hover{
       originalEndDay: clampDay(dayIndexFromDate(bar.end))
     };
     state.selected = { groupIndex, taskIndex, barIndex };
+    state.rowControlsOpen[`${groupIndex}-${taskIndex}`] = true;
     showTooltip(barLabel(state.groups[groupIndex].tasks[taskIndex].name, bar), e.clientX, e.clientY);
   }
 
@@ -1003,7 +1052,11 @@ button:hover{
 
     document.querySelectorAll(".task-bar").forEach(el => {
       el.addEventListener("click", () => {
-        selectBar(Number(el.dataset.groupIndex), Number(el.dataset.taskIndex), Number(el.dataset.barIndex));
+        const groupIndex = Number(el.dataset.groupIndex);
+        const taskIndex = Number(el.dataset.taskIndex);
+        const barIndex = Number(el.dataset.barIndex);
+        state.rowControlsOpen[`${groupIndex}-${taskIndex}`] = true;
+        selectBar(groupIndex, taskIndex, barIndex);
       });
       el.addEventListener("mouseenter", () => {
         const groupIndex = Number(el.dataset.groupIndex);
@@ -1036,6 +1089,12 @@ button:hover{
         changeSelectedBarColor(Number(input.dataset.groupIndex), Number(input.dataset.taskIndex), input.value);
       });
     });
+
+    document.querySelectorAll(".toggle-controls-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        toggleRowControls(Number(btn.dataset.groupIndex), Number(btn.dataset.taskIndex));
+      });
+    });
   }
 
   function saveToLocalStorage() {
@@ -1052,6 +1111,7 @@ button:hover{
       if (!parsed || !Array.isArray(parsed.groups)) return false;
       state.groups = parsed.groups;
       state.phaseFilter = parsed.phaseFilter || "ALL";
+      state.rowControlsOpen = parsed.rowControlsOpen || {};
       return true;
     } catch (e) {
       return false;
@@ -1085,6 +1145,7 @@ button:hover{
     state.groups = deepClone(initialGroups);
     state.selected = null;
     state.phaseFilter = "ALL";
+    state.rowControlsOpen = {};
     render();
   });
 

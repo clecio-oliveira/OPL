@@ -1,0 +1,189 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPL Project Schedule — Phase 1 Timeline</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fff; color: #1a1a1a; margin: 0; padding: 24px; }
+  h2 { font-size: 16px; font-weight: 500; margin: 0 0 4px 0; color: #1a1a1a; }
+  p.sub { font-size: 12px; color: #6b7280; margin: 0 0 20px 0; }
+  * { box-sizing: border-box; }
+  .gc { overflow-x: auto; padding-bottom: 8px; border: 0.5px solid #e5e7eb; border-radius: 8px; }
+  .gi { min-width: 900px; }
+  .gh { display: flex; border-bottom: 0.5px solid #e5e7eb; background: #fff; }
+  .lc { width: 215px; flex-shrink: 0; border-right: 0.5px solid #e5e7eb; display: flex; flex-direction: column; }
+  .lc-top { padding: 5px 10px; font-size: 10px; color: #6b7280; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 0.5px solid #e5e7eb; height: 22px; display: flex; align-items: center; }
+  .lc-bot { height: 22px; display: flex; align-items: center; padding: 0 10px; font-size: 9px; color: #6b7280; }
+  .th-right { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .mo-row { display: flex; border-bottom: 0.5px solid #e5e7eb; height: 22px; }
+  .mo-cell { flex: none; font-size: 10px; color: #6b7280; font-weight: 500; text-align: center; border-right: 0.5px solid #e5e7eb; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .mo-cell:last-child { border-right: none; }
+  .dt-row { height: 22px; position: relative; }
+  .dt-tick { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; }
+  .dt-tick span { font-size: 9px; color: #6b7280; line-height: 1; transform: translateX(-50%); display: block; white-space: nowrap; }
+  .gr { display: flex; align-items: center; gap: 7px; background: #f9fafb; border-top: 0.5px solid #e5e7eb; border-bottom: 0.5px solid #e5e7eb; padding: 4px 10px; height: 24px; }
+  .gd { width: 7px; height: 7px; border-radius: 1px; flex-shrink: 0; }
+  .gl { font-size: 10px; font-weight: 500; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; }
+  .tr { display: flex; border-bottom: 0.5px solid #e5e7eb; min-height: 28px; }
+  .tr:hover .ba { background: #f9fafb; }
+  .tl { width: 215px; flex-shrink: 0; padding: 3px 10px; border-right: 0.5px solid #e5e7eb; display: flex; align-items: center; gap: 5px; }
+  .tn { font-size: 9px; color: #9ca3af; min-width: 16px; flex-shrink: 0; text-align: right; }
+  .nm { font-size: 11px; color: #1a1a1a; line-height: 1.3; }
+  .ba { flex: 1; position: relative; display: flex; align-items: center; transition: background 0.1s; }
+  .mg { position: absolute; top: 0; bottom: 0; pointer-events: none; }
+  .tb { position: absolute; height: 13px; border-radius: 2px; top: 50%; transform: translateY(-50%); }
+  .dia { position: absolute; width: 11px; height: 11px; border-radius: 1px; top: 50%; transform: translateY(-50%) translateX(-5px) rotate(45deg); }
+  .tdy { position: absolute; top: 0; bottom: 0; width: 1.5px; z-index: 5; pointer-events: none; background: #E24B4A; opacity: 0.9; }
+  .leg { display: flex; align-items: center; gap: 6px; padding: 6px 10px; font-size: 11px; color: #6b7280; border-top: 0.5px solid #e5e7eb; }
+  .leg-line { width: 14px; height: 1.5px; background: #E24B4A; flex-shrink: 0; }
+  .ms-badge { font-size: 9px; padding: 1px 5px; border-radius: 10px; font-weight: 500; margin-left: 4px; }
+</style>
+</head>
+<body>
+<h2>OPL Library — Program Registration &amp; Room Rental System</h2>
+<p class="sub">Tentative Project Schedule Phase 1 &nbsp;·&nbsp; Attachment C</p>
+
+<div class="gc">
+  <div class="gi" id="gantt"></div>
+</div>
+
+<script>
+(function(){
+const S=new Date(2025,10,1),E=new Date(2026,6,1),SP=E-S;
+const TOD=new Date(2026,2,31);
+const tp=d=>Math.max(0,Math.min(100,(new Date(d)-S)/SP*100));
+const todPct=(TOD-S)/SP*100;
+
+const MONTH_DEFS=[
+  {year:2025,mo:10,label:"Nov '25",days:30},
+  {year:2025,mo:11,label:"Dec '25",days:31},
+  {year:2026,mo:0, label:"Jan '26",days:31},
+  {year:2026,mo:1, label:"Feb '26",days:28},
+  {year:2026,mo:2, label:"Mar '26",days:31},
+  {year:2026,mo:3, label:"Apr '26",days:30},
+  {year:2026,mo:4, label:"May '26",days:31},
+  {year:2026,mo:5, label:"Jun '26",days:30},
+];
+const TD=MONTH_DEFS.reduce((a,m)=>a+m.days,0);
+let accD=0;
+const MW=MONTH_DEFS.map(m=>{const l=accD/TD*100;accD+=m.days;return{...m,l,w:m.days/TD*100};});
+
+const dateTicks=[];
+MONTH_DEFS.forEach(m=>{
+  [1,8,15,22,29].forEach(day=>{
+    if(day<=m.days){
+      const d=new Date(m.year,m.mo,day);
+      if(d>=S&&d<E) dateTicks.push({leftPct:(d-S)/SP*100,label:day});
+    }
+  });
+});
+
+const GROUPS=[
+  {lbl:"Project Planning",clr:"#7F77DD",tasks:[
+    {id:0,n:"Pre-Implementation Discussions",s:"2025-11-13",e:"2026-02-16",ms:false},
+    {id:1,n:"Project Plan",s:"2026-01-20",e:"2026-02-23",ms:false},
+  ]},
+  {lbl:"Account Configuration",clr:"#378ADD",tasks:[
+    {id:2,n:"OOTB Config & Integration Instructions",s:"2026-01-20",e:"2026-02-28",ms:false},
+    {id:3,n:"OOTB Configuration (Production)",s:"2026-01-20",e:"2026-03-09",ms:false},
+    {id:4,n:"OOTB Config & Accessibility Review",s:"2026-03-10",e:"2026-03-16",ms:false},
+    {id:5,n:"OOTB Config & Accessibility Adjustments",s:"2026-03-17",e:"2026-03-23",ms:false},
+    {id:6,n:"OOTB Configuration Validation",s:"2026-03-24",e:"2026-03-26",ms:false},
+  ]},
+  {lbl:"Test Environment",clr:"#1D9E75",tasks:[
+    {id:7,n:"Test Environment (Sandbox) Ready",s:"2026-03-27",e:"2026-03-31",ms:true},
+  ]},
+  {lbl:"Data Migration",clr:"#BA7517",tasks:[
+    {id:8,n:"Data Migration & Validation (Production)",s:"2026-03-31",e:"2026-04-27",ms:true},
+  ]},
+  {lbl:"User Training, Testing & Validations",clr:"#639922",tasks:[
+    {id:9,n:"OOTB Integrations Config & Testing (Sandbox)",s:"2026-03-31",e:"2026-04-06",ms:false},
+    {id:10,n:"Staff Training, Wave 1 (Foundational)",s:"2026-03-31",e:"2026-04-06",ms:false},
+    {id:11,n:"Staff Training, Wave 1 (Advanced/Make-up)",s:"2026-04-07",e:"2026-04-13",ms:false},
+    {id:13,n:"User Acceptance Testing (UAT) (Sandbox)",s:"2026-04-07",e:"2026-04-20",ms:false},
+    {id:14,n:"OOTB Integrations Config & Testing (Prod)",s:"2026-04-07",e:"2026-04-13",ms:false},
+    {id:15,n:"Security & Privacy Validation (Prod)",s:"2026-04-07",e:"2026-04-13",ms:false},
+    {id:16,n:"Cutover Planning & Runbooks",s:"2026-04-14",e:"2026-04-27",ms:false},
+  ]},
+  {lbl:"Internal Soft Launch & Practice",clr:"#D4537E",tasks:[
+    {id:17,n:"Internal Soft Launch / Staff-Only (Prod)",s:"2026-05-01",e:"2026-05-01",ms:true},
+    {id:18,n:"Stabilization & Staff Practice (Prod)",s:"2026-05-01",e:"2026-05-18",ms:false},
+  ]},
+  {lbl:"Public Launch / Go-Live",clr:"#D85A30",tasks:[
+    {id:19,n:"Final Go/No-Go Readiness Review",s:"2026-05-19",e:"2026-05-21",ms:false},
+    {id:20,n:"Public Launch / Go-Live (Production)",s:"2026-06-01",e:"2026-06-01",ms:true},
+  ]},
+  {lbl:"Post-Launch",clr:"#888780",tasks:[
+    {id:21,n:"Hypercare",s:"2026-06-01",e:"2026-06-15",ms:false},
+    {id:22,n:"Post-Implementation Review",s:"2026-06-16",e:"2026-06-29",ms:false},
+  ]},
+];
+
+const gantt=document.getElementById('gantt');
+
+let moHtml='';
+MW.forEach(m=>{moHtml+=`<div class="mo-cell" style="width:${m.w}%">${m.label}</div>`;});
+
+let dtHtml='';
+dateTicks.forEach(tk=>{
+  dtHtml+=`<div class="dt-tick" style="left:${tk.leftPct}%"><span>${tk.label}</span></div>`;
+});
+
+gantt.innerHTML=`<div class="gh">
+  <div class="lc">
+    <div class="lc-top">Phase / Task</div>
+    <div class="lc-bot">Day</div>
+  </div>
+  <div class="th-right">
+    <div class="mo-row">${moHtml}</div>
+    <div class="dt-row">${dtHtml}</div>
+  </div>
+</div>`;
+
+let gridHtml='';
+dateTicks.forEach(tk=>{
+  gridHtml+=`<div class="mg" style="left:${tk.leftPct}%;width:0.5px;background:#e5e7eb"></div>`;
+});
+MW.forEach(m=>{
+  if(m.l>0) gridHtml+=`<div class="mg" style="left:${m.l}%;width:1px;background:#d1d5db"></div>`;
+});
+const todHtml=`<div class="tdy" style="left:${todPct}%"></div>`;
+
+GROUPS.forEach(g=>{
+  const grEl=document.createElement('div');
+  grEl.className='gr';
+  grEl.innerHTML=`<div class="gd" style="background:${g.clr}"></div><span class="gl">${g.lbl}</span>`;
+  gantt.appendChild(grEl);
+
+  g.tasks.forEach(t=>{
+    const lp=tp(t.s);
+    const rp=tp(t.e);
+    let wp=rp-lp;
+    let barHtml='';
+
+    if(t.ms&&wp<0.2){
+      barHtml=`<div class="dia" style="left:${lp}%;background:${g.clr}"></div>`;
+    } else {
+      if(wp<0.5)wp=0.5;
+      barHtml=`<div class="tb" style="left:${lp}%;width:${wp}%;background:${g.clr};opacity:${t.ms?0.3:0.72}"></div>`;
+      if(t.ms) barHtml+=`<div class="dia" style="left:${rp}%;background:${g.clr}"></div>`;
+    }
+
+    const msBadge=t.ms?`<span class="ms-badge" style="background:${g.clr}22;color:${g.clr}">milestone</span>`:'';
+    const row=document.createElement('div');
+    row.className='tr';
+    row.innerHTML=`<div class="tl"><span class="tn">#${t.id}</span><span class="nm">${t.n}${msBadge}</span></div><div class="ba">${gridHtml}${todHtml}${barHtml}</div>`;
+    gantt.appendChild(row);
+  });
+});
+
+const leg=document.createElement('div');
+leg.className='leg';
+leg.innerHTML=`<div class="leg-line"></div><span>Today — Mar 31, 2026</span><span style="margin-left:14px;display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:1px;display:inline-block;transform:rotate(45deg);background:#888;opacity:0.8"></span><span>Milestone</span></span>`;
+gantt.appendChild(leg);
+})();
+</script>
+</body>
+</html>

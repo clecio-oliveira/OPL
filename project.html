@@ -3,25 +3,23 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Interactive Attachment C Timeline</title>
+<title>Interactive Timeline with Phase Filter</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
 :root{
   --bg:#eef1f5;
   --panel:#f5f6f8;
-  --panel-2:#f0f2f5;
   --grid:#d9dee6;
   --grid-strong:#c8ced8;
   --text:#475467;
   --muted:#7a8599;
   --today:#e05347;
 
-  --left-col:280px;
-  --row-h:28px;
-  --group-h:24px;
-  --bar-h:14px;
-  --radius:14px;
+  --left-col: 470px;
+  --row-h: 34px;
+  --group-h: 24px;
+  --radius: 14px;
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -67,18 +65,33 @@ body{
   flex-wrap:wrap;
 }
 
-button{
+button, select{
   border:1px solid var(--grid-strong);
   background:white;
   color:#344054;
   border-radius:10px;
   padding:8px 12px;
   font:600 12px/1 Inter,sans-serif;
+}
+
+button{
   cursor:pointer;
 }
 
 button:hover{
   background:#f8fafc;
+}
+
+.filter-wrap{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.filter-label{
+  font-size:12px;
+  font-weight:600;
+  color:#667085;
 }
 
 .gantt-wrap{
@@ -87,7 +100,7 @@ button:hover{
 }
 
 .gantt{
-  min-width:1900px;
+  min-width:2100px;
   background:var(--panel);
   border:1px solid var(--grid-strong);
   border-radius:var(--radius);
@@ -244,8 +257,9 @@ button:hover{
   border-right:1px solid var(--grid);
   display:flex;
   align-items:center;
-  gap:7px;
+  gap:8px;
   padding:0 10px 0 12px;
+  overflow:hidden;
 }
 
 .task-num{
@@ -256,18 +270,45 @@ button:hover{
 }
 
 .task-name{
+  min-width:0;
   flex:1;
   font-size:11px;
   line-height:1.15;
   color:#4a5568;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 
-.ms-pill{
-  font-size:9px;
-  font-weight:700;
-  padding:2px 6px;
-  border-radius:999px;
-  white-space:nowrap;
+.row-controls{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex-shrink:0;
+}
+
+.row-mini-btn{
+  padding:5px 8px;
+  border-radius:8px;
+  font-size:11px;
+  line-height:1;
+}
+
+.row-color{
+  width:28px;
+  height:24px;
+  border:1px solid var(--grid-strong);
+  border-radius:7px;
+  padding:2px;
+  background:white;
+  cursor:pointer;
+}
+
+.row-status{
+  font-size:10px;
+  color:#8b95a7;
+  min-width:52px;
+  text-align:center;
 }
 
 .bar-area{
@@ -299,24 +340,6 @@ button:hover{
   pointer-events:none;
 }
 
-.task-bar,
-.ms-bar{
-  position:absolute;
-  top:50%;
-  transform:translateY(-50%);
-  height:var(--bar-h);
-  border-radius:999px;
-  z-index:5;
-}
-
-.task-bar{
-  opacity:.95;
-}
-
-.ms-bar{
-  opacity:.22;
-}
-
 .bar-shell{
   position:absolute;
   top:50%;
@@ -325,17 +348,23 @@ button:hover{
   z-index:7;
 }
 
-.drag-bar{
+.task-bar{
   position:absolute;
   inset:3px 0 3px 0;
   border-radius:999px;
   cursor:grab;
   touch-action:none;
   box-shadow:0 1px 0 rgba(0,0,0,.05);
+  opacity:.96;
 }
 
-.drag-bar:active{
+.task-bar:active{
   cursor:grabbing;
+}
+
+.task-bar.selected{
+  outline:2px solid #111827;
+  outline-offset:2px;
 }
 
 .resize-handle{
@@ -348,13 +377,8 @@ button:hover{
   touch-action:none;
 }
 
-.resize-handle.left{
-  left:-2px;
-}
-
-.resize-handle.right{
-  right:-2px;
-}
+.resize-handle.left{ left:-2px; }
+.resize-handle.right{ right:-2px; }
 
 .resize-handle::after{
   content:"";
@@ -364,23 +388,7 @@ button:hover{
   left:3px;
   right:3px;
   border-radius:999px;
-  background:rgba(255,255,255,.7);
-}
-
-.ms-dia{
-  position:absolute;
-  top:50%;
-  width:12px;
-  height:12px;
-  transform:translate(-50%,-50%) rotate(45deg);
-  border-radius:2px;
-  z-index:6;
-  cursor:grab;
-  touch-action:none;
-}
-
-.ms-dia:active{
-  cursor:grabbing;
+  background:rgba(255,255,255,.78);
 }
 
 .tooltip{
@@ -428,14 +436,6 @@ button:hover{
   background:var(--today);
 }
 
-.leg-dia{
-  width:9px;
-  height:9px;
-  background:#7f8aa0;
-  transform:rotate(45deg);
-  border-radius:1px;
-}
-
 .leg-bar{
   width:20px;
   height:10px;
@@ -459,17 +459,13 @@ button:hover{
 
 .output textarea{
   width:100%;
-  min-height:180px;
+  min-height:200px;
   border:1px solid var(--grid);
   border-radius:10px;
   padding:10px;
   font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;
   resize:vertical;
   background:#fbfcfe;
-}
-
-@media (max-width:1100px){
-  .gantt{min-width:1700px}
 }
 </style>
 </head>
@@ -478,9 +474,14 @@ button:hover{
 <div class="toolbar">
   <div class="toolbar-left">
     <div class="toolbar-title">Interactive Timeline</div>
-    <div class="toolbar-note">Drag bars to move. Drag edges to resize. Drag milestone diamonds to change the date.</div>
+    <div class="toolbar-note">Filtre por fase, adicione barrinhas, selecione e altere a cor.</div>
   </div>
+
   <div class="toolbar-right">
+    <div class="filter-wrap">
+      <span class="filter-label">Filter phase</span>
+      <select id="phaseFilter"></select>
+    </div>
     <button id="saveBtn" type="button">Save</button>
     <button id="resetBtn" type="button">Reset</button>
     <button id="exportBtn" type="button">Export dates</button>
@@ -493,8 +494,12 @@ button:hover{
 
 <div class="legend">
   <div class="legend-item"><div class="leg-line"></div><span>Today</span></div>
-  <div class="legend-item"><div class="leg-dia"></div><span>Milestone</span></div>
-  <div class="legend-item"><div class="leg-bar"></div><span>Task duration</span></div>
+  <div class="legend-item"><div class="leg-bar"></div><span>Task bar</span></div>
+</div>
+
+<div class="output">
+  <h3>Updated task dates</h3>
+  <textarea id="exportBox" readonly></textarea>
 </div>
 
 <div class="tooltip" id="tooltip"></div>
@@ -506,8 +511,7 @@ button:hover{
   const TODAY = new Date(2026, 2, 31);
   const MS_PER_DAY = 24 * 60 * 60 * 1000;
   const TOTAL_DAYS = Math.round((END - START) / MS_PER_DAY);
-
-  const STORAGE_KEY = "interactive_timeline_dates_v1";
+  const STORAGE_KEY = "interactive_timeline_multi_bars_v2";
 
   const months = [
     { year: 2026, mo: 0, label: "JAN '26", days: 31 },
@@ -523,77 +527,79 @@ button:hover{
       label: "PROJECT PLANNING",
       color: "#a67cf2",
       tasks: [
-        { id: 0, name: "Pre-Implementation Discussions", start: "2025-11-13", end: "2026-04-15", milestone: false },
-        { id: 1, name: "Project Plan", start: "2026-01-20", end: "2026-04-15", milestone: false }
+        { id: 0, name: "Pre-Implementation Discussions", bars: [{ start: "2025-11-13", end: "2026-04-15", color: "#a67cf2" }] },
+        { id: 1, name: "Project Plan", bars: [{ start: "2026-01-20", end: "2026-04-15", color: "#a67cf2" }] }
       ]
     },
     {
       label: "ACCOUNT CONFIGURATION",
       color: "#5fa7ea",
       tasks: [
-        { id: 2, name: "OOTB Config & Integration Instructions", start: "2026-01-20", end: "2026-03-22", milestone: false },
-        { id: 3, name: "OOTB Configuration (Production)", start: "2026-01-20", end: "2026-03-15", milestone: false },
-        { id: 4, name: "OOTB Config & Accessibility Review", start: "2026-03-10", end: "2026-04-08", milestone: false },
-        { id: 5, name: "OOTB Config & Accessibility Adjustments", start: "2026-03-17", end: "2026-04-15", milestone: false },
-        { id: 6, name: "OOTB Configuration Validation", start: "2026-03-24", end: "2026-04-22", milestone: false }
+        { id: 2, name: "OOTB Config & Integration Instructions", bars: [{ start: "2026-01-20", end: "2026-03-22", color: "#5fa7ea" }] },
+        { id: 3, name: "OOTB Configuration (Production)", bars: [{ start: "2026-01-20", end: "2026-03-15", color: "#5fa7ea" }] },
+        { id: 4, name: "OOTB Config & Accessibility Review", bars: [{ start: "2026-03-10", end: "2026-04-08", color: "#5fa7ea" }] },
+        { id: 5, name: "OOTB Config & Accessibility Adjustments", bars: [{ start: "2026-03-17", end: "2026-04-15", color: "#5fa7ea" }] },
+        { id: 6, name: "OOTB Configuration Validation", bars: [{ start: "2026-03-24", end: "2026-04-22", color: "#5fa7ea" }] }
       ]
     },
     {
       label: "TEST ENVIRONMENT",
       color: "#6fd0c9",
       tasks: [
-        { id: 7, name: "Test Environment (Sandbox) Ready", start: "2026-03-27", end: "2026-04-29", milestone: true, milestoneAtEnd: true }
+        { id: 7, name: "Test Environment (Sandbox) Ready", bars: [{ start: "2026-03-27", end: "2026-04-29", color: "#6fd0c9" }] }
       ]
     },
     {
       label: "DATA MIGRATION",
       color: "#e8b089",
       tasks: [
-        { id: 8, name: "Data Migration & Validation (Production)", start: "2026-03-31", end: "2026-04-29", milestone: true, milestoneAtEnd: true }
+        { id: 8, name: "Data Migration & Validation (Production)", bars: [{ start: "2026-03-31", end: "2026-04-29", color: "#e8b089" }] }
       ]
     },
     {
       label: "USER TRAINING, TESTING & VALIDATIONS",
       color: "#59c57d",
       tasks: [
-        { id: 9,  name: "OOTB Integrations Config & Testing (Sandbox)", start: "2026-03-31", end: "2026-04-06", milestone: false },
-        { id: 10, name: "Staff Training, Wave 1 (Foundational)", start: "2026-03-31", end: "2026-04-06", milestone: false },
-        { id: 11, name: "Staff Training, Wave 1 (Advanced/Make-up)", start: "2026-04-07", end: "2026-04-13", milestone: false },
-        { id: 13, name: "User Acceptance Testing (UAT) (Sandbox)", start: "2026-04-07", end: "2026-04-20", milestone: false },
-        { id: 14, name: "OOTB Integrations Config & Testing (Prod)", start: "2026-04-07", end: "2026-04-13", milestone: false },
-        { id: 15, name: "Security & Privacy Validation (Prod)", start: "2026-04-07", end: "2026-04-13", milestone: false },
-        { id: 16, name: "Cutover Planning & Runbooks", start: "2026-04-14", end: "2026-04-27", milestone: false }
+        { id: 9,  name: "OOTB Integrations Config & Testing (Sandbox)", bars: [{ start: "2026-03-31", end: "2026-04-06", color: "#59c57d" }] },
+        { id: 10, name: "Staff Training, Wave 1 (Foundational)", bars: [{ start: "2026-03-31", end: "2026-04-06", color: "#59c57d" }] },
+        { id: 11, name: "Staff Training, Wave 1 (Advanced/Make-up)", bars: [{ start: "2026-04-07", end: "2026-04-13", color: "#59c57d" }] },
+        { id: 13, name: "User Acceptance Testing (UAT) (Sandbox)", bars: [{ start: "2026-04-07", end: "2026-04-20", color: "#59c57d" }] },
+        { id: 14, name: "OOTB Integrations Config & Testing (Prod)", bars: [{ start: "2026-04-07", end: "2026-04-13", color: "#59c57d" }] },
+        { id: 15, name: "Security & Privacy Validation (Prod)", bars: [{ start: "2026-04-07", end: "2026-04-13", color: "#59c57d" }] },
+        { id: 16, name: "Cutover Planning & Runbooks", bars: [{ start: "2026-04-14", end: "2026-04-27", color: "#59c57d" }] }
       ]
     },
     {
       label: "INTERNAL SOFT LAUNCH & PRACTICE",
       color: "#ef8db8",
       tasks: [
-        { id: 17, name: "Internal Soft Launch / Staff-Only (Prod)", start: "2026-05-01", end: "2026-05-01", milestone: true },
-        { id: 18, name: "Stabilization & Staff Practice (Prod)", start: "2026-05-01", end: "2026-05-18", milestone: false }
+        { id: 17, name: "Internal Soft Launch / Staff-Only (Prod)", bars: [{ start: "2026-05-01", end: "2026-05-01", color: "#ef8db8" }] },
+        { id: 18, name: "Stabilization & Staff Practice (Prod)", bars: [{ start: "2026-05-01", end: "2026-05-18", color: "#ef8db8" }] }
       ]
     },
     {
       label: "PUBLIC LAUNCH / GO-LIVE",
       color: "#f18484",
       tasks: [
-        { id: 19, name: "Final Go/No-Go Readiness Review", start: "2026-05-19", end: "2026-05-21", milestone: false },
-        { id: 20, name: "Public Launch / Go-Live (Production)", start: "2026-06-01", end: "2026-06-01", milestone: true }
+        { id: 19, name: "Final Go/No-Go Readiness Review", bars: [{ start: "2026-05-19", end: "2026-05-21", color: "#f18484" }] },
+        { id: 20, name: "Public Launch / Go-Live (Production)", bars: [{ start: "2026-06-01", end: "2026-06-01", color: "#f18484" }] }
       ]
     },
     {
       label: "POST-LAUNCH",
       color: "#74dced",
       tasks: [
-        { id: 21, name: "Hypercare", start: "2026-06-01", end: "2026-06-15", milestone: false },
-        { id: 22, name: "Post-Implementation Review", start: "2026-06-16", end: "2026-06-29", milestone: false }
+        { id: 21, name: "Hypercare", bars: [{ start: "2026-06-01", end: "2026-06-15", color: "#74dced" }] },
+        { id: 22, name: "Post-Implementation Review", bars: [{ start: "2026-06-16", end: "2026-06-29", color: "#74dced" }] }
       ]
     }
   ];
 
   const state = {
     groups: deepClone(initialGroups),
-    activeDrag: null
+    activeDrag: null,
+    selected: null,
+    phaseFilter: "ALL"
   };
 
   const gantt = document.getElementById("gantt");
@@ -602,6 +608,7 @@ button:hover{
   const resetBtn = document.getElementById("resetBtn");
   const exportBtn = document.getElementById("exportBtn");
   const saveBtn = document.getElementById("saveBtn");
+  const phaseFilter = document.getElementById("phaseFilter");
 
   function deepClone(obj) {
     return JSON.parse(JSON.stringify(obj));
@@ -668,7 +675,6 @@ button:hover{
           const d = new Date(m.year, m.mo, day);
           if (d >= START && d < END) {
             ticks.push({
-              dayIndex: Math.round((d - START) / MS_PER_DAY),
               left: ((d - START) / (END - START)) * 100,
               label: day
             });
@@ -679,35 +685,38 @@ button:hover{
     return ticks;
   }
 
-  function flattenTasks() {
-    const out = [];
-    state.groups.forEach((group, groupIndex) => {
-      group.tasks.forEach((task, taskIndex) => {
-        out.push({ groupIndex, taskIndex, group, task });
-      });
+  function getVisibleGroups() {
+    if (state.phaseFilter === "ALL") return state.groups;
+    return state.groups.filter(group => group.label === state.phaseFilter);
+  }
+
+  function refreshPhaseFilterOptions() {
+    const current = state.phaseFilter;
+    phaseFilter.innerHTML = `<option value="ALL">All phases</option>`;
+    state.groups.forEach(group => {
+      const option = document.createElement("option");
+      option.value = group.label;
+      option.textContent = group.label;
+      phaseFilter.appendChild(option);
     });
-    return out;
+    phaseFilter.value = current;
   }
 
   function serializeState() {
-    return state.groups.map(group => ({
-      label: group.label,
-      color: group.color,
-      tasks: group.tasks.map(task => ({
-        id: task.id,
-        name: task.name,
-        start: task.start,
-        end: task.end,
-        milestone: !!task.milestone,
-        milestoneAtEnd: !!task.milestoneAtEnd
-      }))
-    }));
+    return {
+      groups: state.groups,
+      phaseFilter: state.phaseFilter
+    };
   }
 
   function updateExportBox() {
     const lines = [];
-    flattenTasks().forEach(({ task }) => {
-      lines.push(`#${task.id} | ${task.name} | ${task.start} → ${task.end}`);
+    state.groups.forEach(group => {
+      group.tasks.forEach(task => {
+        task.bars.forEach((bar, index) => {
+          lines.push(`${group.label} | #${task.id} | ${task.name} | bar ${index + 1} | ${bar.start} → ${bar.end} | ${bar.color}`);
+        });
+      });
     });
     exportBox.value = lines.join("\n");
   }
@@ -732,26 +741,317 @@ button:hover{
     return Math.round((px / getBarAreaWidth()) * TOTAL_DAYS);
   }
 
-  function dragLabel(task) {
-    return `${task.name}\n${labelDate(task.start)} → ${labelDate(task.end)}`;
+  function getBar(groupIndex, taskIndex, barIndex) {
+    return state.groups[groupIndex].tasks[taskIndex].bars[barIndex];
+  }
+
+  function isSelected(groupIndex, taskIndex, barIndex) {
+    return state.selected &&
+      state.selected.groupIndex === groupIndex &&
+      state.selected.taskIndex === taskIndex &&
+      state.selected.barIndex === barIndex;
+  }
+
+  function selectBar(groupIndex, taskIndex, barIndex) {
+    state.selected = { groupIndex, taskIndex, barIndex };
+    render();
+  }
+
+  function barLabel(taskName, bar) {
+    return `${taskName}\n${labelDate(bar.start)} → ${labelDate(bar.end)}`;
+  }
+
+  function addBar(groupIndex, taskIndex) {
+    const task = state.groups[groupIndex].tasks[taskIndex];
+    const defaultColor = task.bars[0]?.color || state.groups[groupIndex].color || "#5fa7ea";
+    task.bars.push({
+      start: "2026-04-01",
+      end: "2026-04-08",
+      color: defaultColor
+    });
+    state.selected = { groupIndex, taskIndex, barIndex: task.bars.length - 1 };
+    render();
+  }
+
+  function deleteSelectedBar(groupIndex, taskIndex) {
+    if (!state.selected) return;
+    if (state.selected.groupIndex !== groupIndex || state.selected.taskIndex !== taskIndex) return;
+
+    const bars = state.groups[groupIndex].tasks[taskIndex].bars;
+    if (bars.length <= 1) return;
+
+    bars.splice(state.selected.barIndex, 1);
+    state.selected = null;
+    render();
+  }
+
+  function changeSelectedBarColor(groupIndex, taskIndex, value) {
+    if (!state.selected) return;
+    if (state.selected.groupIndex !== groupIndex || state.selected.taskIndex !== taskIndex) return;
+
+    const task = state.groups[groupIndex].tasks[taskIndex];
+    const bar = task.bars[state.selected.barIndex];
+    if (!bar) return;
+    bar.color = value;
+    render();
+  }
+
+  function render() {
+    refreshPhaseFilterOptions();
+
+    const visibleGroups = getVisibleGroups();
+    const mWidths = monthWidths();
+    const ticks = buildTicks();
+    const todayPct = ((TODAY - START) / (END - START)) * 100;
+
+    let monthHtml = "";
+    mWidths.forEach(m => {
+      monthHtml += `<div class="mo-cell" style="width:${m.width}%">${m.label}</div>`;
+    });
+
+    let tickHtml = `<div class="today-header" style="left:${todayPct}%"><div class="today-chip">TODAY</div></div>`;
+    ticks.forEach(t => {
+      tickHtml += `<div class="dt-tick" style="left:${t.left}%">${t.label}</div>`;
+    });
+
+    gantt.innerHTML = `
+      <div class="thead">
+        <div class="thead-left">
+          <div class="thead-top">PHASE / TASK / CONTROLS</div>
+          <div class="thead-bot">Day</div>
+        </div>
+        <div class="thead-right">
+          <div class="mo-row">${monthHtml}</div>
+          <div class="dt-row">${tickHtml}</div>
+        </div>
+      </div>
+    `;
+
+    let gridHtml = "";
+    ticks.forEach(t => {
+      gridHtml += `<div class="grid-v" style="left:${t.left}%"></div>`;
+    });
+    mWidths.forEach(m => {
+      if (m.left > 0) gridHtml += `<div class="grid-v month" style="left:${m.left}%"></div>`;
+    });
+
+    const todayLine = `<div class="today-line" style="left:${todayPct}%"></div>`;
+
+    visibleGroups.forEach(group => {
+      const groupIndex = state.groups.findIndex(g => g.label === group.label);
+
+      const groupRow = document.createElement("div");
+      groupRow.className = "group-row";
+      groupRow.innerHTML = `
+        <div class="group-label-cell">
+          <div class="group-dot" style="background:${group.color}"></div>
+          <div class="group-label" style="color:${group.color}">${group.label}</div>
+        </div>
+        <div class="group-bar-area">
+          ${gridHtml}
+          ${todayLine}
+        </div>
+      `;
+      gantt.appendChild(groupRow);
+
+      group.tasks.forEach((task, taskIndex) => {
+        const selectedBar = state.selected &&
+          state.selected.groupIndex === groupIndex &&
+          state.selected.taskIndex === taskIndex
+          ? task.bars[state.selected.barIndex]
+          : null;
+
+        let barsMarkup = "";
+        task.bars.forEach((bar, barIndex) => {
+          const startDay = clampDay(dayIndexFromDate(bar.start));
+          const endDay = clampDay(dayIndexFromDate(bar.end));
+          const left = pctFromDay(startDay);
+          const width = Math.max(((Math.max(endDay - startDay, 0) + 1) / TOTAL_DAYS) * 100, 0.55);
+          const selectedClass = isSelected(groupIndex, taskIndex, barIndex) ? "selected" : "";
+
+          barsMarkup += `
+            <div class="bar-shell" style="left:${left}%;width:${width}%;">
+              <div class="task-bar ${selectedClass}"
+                   data-action="move"
+                   data-group-index="${groupIndex}"
+                   data-task-index="${taskIndex}"
+                   data-bar-index="${barIndex}"
+                   style="background:${bar.color};"></div>
+              <div class="resize-handle left"
+                   data-action="resize-left"
+                   data-group-index="${groupIndex}"
+                   data-task-index="${taskIndex}"
+                   data-bar-index="${barIndex}"></div>
+              <div class="resize-handle right"
+                   data-action="resize-right"
+                   data-group-index="${groupIndex}"
+                   data-task-index="${taskIndex}"
+                   data-bar-index="${barIndex}"></div>
+            </div>
+          `;
+        });
+
+        const row = document.createElement("div");
+        row.className = "task-row";
+        row.innerHTML = `
+          <div class="task-left">
+            <span class="task-num">#${task.id}</span>
+            <span class="task-name">${task.name}</span>
+            <div class="row-controls">
+              <button class="row-mini-btn add-bar-btn" data-group-index="${groupIndex}" data-task-index="${taskIndex}" type="button">+ Bar</button>
+              <button class="row-mini-btn del-bar-btn" data-group-index="${groupIndex}" data-task-index="${taskIndex}" type="button">Delete</button>
+              <input class="row-color color-input" type="color"
+                     data-group-index="${groupIndex}" data-task-index="${taskIndex}"
+                     value="${selectedBar ? selectedBar.color : (task.bars[0]?.color || group.color)}" />
+              <span class="row-status">${selectedBar ? "selected" : "none"}</span>
+            </div>
+          </div>
+          <div class="bar-area">
+            ${gridHtml}
+            ${todayLine}
+            ${barsMarkup}
+          </div>
+        `;
+        gantt.appendChild(row);
+      });
+    });
+
+    bindInteractions();
+    updateExportBox();
+  }
+
+  function startInteraction(e, action, groupIndex, taskIndex, barIndex) {
+    const bar = getBar(groupIndex, taskIndex, barIndex);
+    state.activeDrag = {
+      action,
+      groupIndex,
+      taskIndex,
+      barIndex,
+      startX: e.clientX,
+      originalStartDay: clampDay(dayIndexFromDate(bar.start)),
+      originalEndDay: clampDay(dayIndexFromDate(bar.end))
+    };
+    state.selected = { groupIndex, taskIndex, barIndex };
+    showTooltip(barLabel(state.groups[groupIndex].tasks[taskIndex].name, bar), e.clientX, e.clientY);
+  }
+
+  function onPointerDown(e) {
+    const target = e.target.closest("[data-action]");
+    if (!target) return;
+
+    e.preventDefault();
+
+    const action = target.dataset.action;
+    const groupIndex = Number(target.dataset.groupIndex);
+    const taskIndex = Number(target.dataset.taskIndex);
+    const barIndex = Number(target.dataset.barIndex);
+
+    startInteraction(e, action, groupIndex, taskIndex, barIndex);
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    render();
+  }
+
+  function onPointerMove(e) {
+    if (!state.activeDrag) return;
+
+    const drag = state.activeDrag;
+    const bar = getBar(drag.groupIndex, drag.taskIndex, drag.barIndex);
+    const deltaDays = pxToDayDelta(e.clientX - drag.startX);
+
+    if (drag.action === "move") {
+      const duration = Math.max(drag.originalEndDay - drag.originalStartDay, 0);
+      let newStart = clampDay(drag.originalStartDay + deltaDays);
+      let newEnd = clampDay(newStart + duration);
+
+      if (newEnd >= TOTAL_DAYS) {
+        newEnd = TOTAL_DAYS - 1;
+        newStart = Math.max(0, newEnd - duration);
+      }
+
+      bar.start = dateFromDayIndex(newStart);
+      bar.end = dateFromDayIndex(newEnd);
+    }
+
+    if (drag.action === "resize-left") {
+      let newStart = clampDay(drag.originalStartDay + deltaDays);
+      if (newStart > drag.originalEndDay) newStart = drag.originalEndDay;
+      bar.start = dateFromDayIndex(newStart);
+    }
+
+    if (drag.action === "resize-right") {
+      let newEnd = clampDay(drag.originalEndDay + deltaDays);
+      if (newEnd < drag.originalStartDay) newEnd = drag.originalStartDay;
+      bar.end = dateFromDayIndex(newEnd);
+    }
+
+    render();
+    showTooltip(barLabel(state.groups[drag.groupIndex].tasks[drag.taskIndex].name, bar), e.clientX, e.clientY);
+  }
+
+  function onPointerUp() {
+    state.activeDrag = null;
+    hideTooltip();
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerup", onPointerUp);
+  }
+
+  function bindInteractions() {
+    gantt.removeEventListener("pointerdown", onPointerDown);
+    gantt.addEventListener("pointerdown", onPointerDown);
+
+    document.querySelectorAll(".task-bar").forEach(el => {
+      el.addEventListener("click", () => {
+        selectBar(Number(el.dataset.groupIndex), Number(el.dataset.taskIndex), Number(el.dataset.barIndex));
+      });
+      el.addEventListener("mouseenter", () => {
+        const groupIndex = Number(el.dataset.groupIndex);
+        const taskIndex = Number(el.dataset.taskIndex);
+        const barIndex = Number(el.dataset.barIndex);
+        const task = state.groups[groupIndex].tasks[taskIndex];
+        const bar = task.bars[barIndex];
+        const rect = el.getBoundingClientRect();
+        showTooltip(barLabel(task.name, bar), rect.left + rect.width / 2, rect.top);
+      });
+      el.addEventListener("mouseleave", () => {
+        if (!state.activeDrag) hideTooltip();
+      });
+    });
+
+    document.querySelectorAll(".add-bar-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        addBar(Number(btn.dataset.groupIndex), Number(btn.dataset.taskIndex));
+      });
+    });
+
+    document.querySelectorAll(".del-bar-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        deleteSelectedBar(Number(btn.dataset.groupIndex), Number(btn.dataset.taskIndex));
+      });
+    });
+
+    document.querySelectorAll(".color-input").forEach(input => {
+      input.addEventListener("input", () => {
+        changeSelectedBarColor(Number(input.dataset.groupIndex), Number(input.dataset.taskIndex), input.value);
+      });
+    });
   }
 
   function saveToLocalStorage() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(serializeState()));
     saveBtn.textContent = "Saved";
-    setTimeout(() => {
-      saveBtn.textContent = "Save";
-    }, 1200);
+    setTimeout(() => saveBtn.textContent = "Save", 1200);
   }
 
   function loadFromLocalStorage() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return false;
-
     try {
       const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return false;
-      state.groups = parsed;
+      if (!parsed || !Array.isArray(parsed.groups)) return false;
+      state.groups = parsed.groups;
+      state.phaseFilter = parsed.phaseFilter || "ALL";
       return true;
     } catch (e) {
       return false;
@@ -771,250 +1071,10 @@ button:hover{
     URL.revokeObjectURL(url);
   }
 
-  function render() {
-    const mWidths = monthWidths();
-    const ticks = buildTicks();
-    const todayPct = ((TODAY - START) / (END - START)) * 100;
-
-    let monthHtml = "";
-    mWidths.forEach(m => {
-      monthHtml += `<div class="mo-cell" style="width:${m.width}%">${m.label}</div>`;
-    });
-
-    let tickHtml = `<div class="today-header" style="left:${todayPct}%"><div class="today-chip">TODAY</div></div>`;
-    ticks.forEach(t => {
-      tickHtml += `<div class="dt-tick" style="left:${t.left}%">${t.label}</div>`;
-    });
-
-    gantt.innerHTML = `
-      <div class="thead">
-        <div class="thead-left">
-          <div class="thead-top">PHASE / TASK</div>
-          <div class="thead-bot">Day</div>
-        </div>
-        <div class="thead-right">
-          <div class="mo-row">${monthHtml}</div>
-          <div class="dt-row">${tickHtml}</div>
-        </div>
-      </div>
-    `;
-
-    let gridHtml = "";
-    ticks.forEach(t => {
-      gridHtml += `<div class="grid-v" style="left:${t.left}%"></div>`;
-    });
-    mWidths.forEach(m => {
-      if (m.left > 0) {
-        gridHtml += `<div class="grid-v month" style="left:${m.left}%"></div>`;
-      }
-    });
-
-    const todayLine = `<div class="today-line" style="left:${todayPct}%"></div>`;
-
-    state.groups.forEach((group, groupIndex) => {
-      const groupRow = document.createElement("div");
-      groupRow.className = "group-row";
-      groupRow.innerHTML = `
-        <div class="group-label-cell">
-          <div class="group-dot" style="background:${group.color}"></div>
-          <div class="group-label" style="color:${group.color}">${group.label}</div>
-        </div>
-        <div class="group-bar-area">
-          ${gridHtml}
-          ${todayLine}
-        </div>
-      `;
-      gantt.appendChild(groupRow);
-
-      group.tasks.forEach((task, taskIndex) => {
-        const startDay = clampDay(dayIndexFromDate(task.start));
-        const endDay = clampDay(dayIndexFromDate(task.end));
-        const left = pctFromDay(startDay);
-        const width = Math.max(((Math.max(endDay - startDay, 0) + 1) / TOTAL_DAYS) * 100, 0.55);
-
-        const pill = task.milestone
-          ? `<span class="ms-pill" style="background:${group.color}22;color:${group.color};border:1px solid ${group.color}44">MS</span>`
-          : "";
-
-        const row = document.createElement("div");
-        row.className = "task-row";
-
-        let barMarkup = "";
-
-        if (task.milestone) {
-          if (task.milestoneAtEnd && endDay > startDay) {
-            barMarkup = `
-              <div class="ms-bar" style="left:${left}%;width:${width}%;background:${group.color}"></div>
-              <div class="bar-shell" style="left:${left}%;width:${width}%;">
-                <div class="drag-bar"
-                     data-action="move"
-                     data-group-index="${groupIndex}"
-                     data-task-index="${taskIndex}"
-                     style="background:${group.color}; opacity:.01;"></div>
-                <div class="resize-handle left"
-                     data-action="resize-left"
-                     data-group-index="${groupIndex}"
-                     data-task-index="${taskIndex}"></div>
-              </div>
-              <div class="ms-dia"
-                   data-action="resize-right"
-                   data-group-index="${groupIndex}"
-                   data-task-index="${taskIndex}"
-                   style="left:${pctFromDay(endDay)}%;background:${group.color}"></div>
-            `;
-          } else {
-            barMarkup = `
-              <div class="ms-dia"
-                   data-action="move-milestone"
-                   data-group-index="${groupIndex}"
-                   data-task-index="${taskIndex}"
-                   style="left:${pctFromDay(startDay)}%;background:${group.color}"></div>
-            `;
-          }
-        } else {
-          barMarkup = `
-            <div class="task-bar" style="left:${left}%;width:${width}%;background:${group.color}"></div>
-            <div class="bar-shell" style="left:${left}%;width:${width}%;">
-              <div class="drag-bar"
-                   data-action="move"
-                   data-group-index="${groupIndex}"
-                   data-task-index="${taskIndex}"
-                   style="background:${group.color};"></div>
-              <div class="resize-handle left"
-                   data-action="resize-left"
-                   data-group-index="${groupIndex}"
-                   data-task-index="${taskIndex}"></div>
-              <div class="resize-handle right"
-                   data-action="resize-right"
-                   data-group-index="${groupIndex}"
-                   data-task-index="${taskIndex}"></div>
-            </div>
-          `;
-        }
-
-        row.innerHTML = `
-          <div class="task-left">
-            <span class="task-num">#${task.id}</span>
-            <span class="task-name">${task.name}</span>
-            ${pill}
-          </div>
-          <div class="bar-area">
-            ${gridHtml}
-            ${todayLine}
-            ${barMarkup}
-          </div>
-        `;
-
-        gantt.appendChild(row);
-      });
-    });
-
-    bindInteractions();
-    updateExportBox();
-  }
-
-  function startInteraction(e, action, groupIndex, taskIndex) {
-    const task = state.groups[groupIndex].tasks[taskIndex];
-    state.activeDrag = {
-      action,
-      groupIndex,
-      taskIndex,
-      startX: e.clientX,
-      originalStartDay: clampDay(dayIndexFromDate(task.start)),
-      originalEndDay: clampDay(dayIndexFromDate(task.end))
-    };
-
-    showTooltip(dragLabel(task), e.clientX, e.clientY);
-  }
-
-  function onPointerDown(e) {
-    const target = e.target.closest("[data-action]");
-    if (!target) return;
-
-    e.preventDefault();
-
-    const action = target.dataset.action;
-    const groupIndex = Number(target.dataset.groupIndex);
-    const taskIndex = Number(target.dataset.taskIndex);
-
-    startInteraction(e, action, groupIndex, taskIndex);
-
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", onPointerUp);
-  }
-
-  function onPointerMove(e) {
-    if (!state.activeDrag) return;
-
-    const drag = state.activeDrag;
-    const task = state.groups[drag.groupIndex].tasks[drag.taskIndex];
-    const deltaDays = pxToDayDelta(e.clientX - drag.startX);
-
-    if (drag.action === "move") {
-      const duration = Math.max(drag.originalEndDay - drag.originalStartDay, 0);
-      let newStart = clampDay(drag.originalStartDay + deltaDays);
-      let newEnd = clampDay(newStart + duration);
-
-      if (newEnd >= TOTAL_DAYS) {
-        newEnd = TOTAL_DAYS - 1;
-        newStart = Math.max(0, newEnd - duration);
-      }
-
-      task.start = dateFromDayIndex(newStart);
-      task.end = dateFromDayIndex(newEnd);
-    }
-
-    if (drag.action === "resize-left") {
-      let newStart = clampDay(drag.originalStartDay + deltaDays);
-      const maxStart = drag.originalEndDay;
-      if (newStart > maxStart) newStart = maxStart;
-
-      task.start = dateFromDayIndex(newStart);
-    }
-
-    if (drag.action === "resize-right") {
-      let newEnd = clampDay(drag.originalEndDay + deltaDays);
-      const minEnd = drag.originalStartDay;
-      if (newEnd < minEnd) newEnd = minEnd;
-
-      task.end = dateFromDayIndex(newEnd);
-    }
-
-    if (drag.action === "move-milestone") {
-      const newDay = clampDay(drag.originalStartDay + deltaDays);
-      const newDate = dateFromDayIndex(newDay);
-      task.start = newDate;
-      task.end = newDate;
-    }
-
+  phaseFilter.addEventListener("change", () => {
+    state.phaseFilter = phaseFilter.value;
     render();
-    showTooltip(dragLabel(task), e.clientX, e.clientY);
-  }
-
-  function onPointerUp() {
-    state.activeDrag = null;
-    hideTooltip();
-    window.removeEventListener("pointermove", onPointerMove);
-    window.removeEventListener("pointerup", onPointerUp);
-  }
-
-  function bindInteractions() {
-    gantt.removeEventListener("pointerdown", onPointerDown);
-    gantt.addEventListener("pointerdown", onPointerDown);
-
-    gantt.querySelectorAll("[data-action]").forEach(el => {
-      el.addEventListener("mouseenter", () => {
-        const groupIndex = Number(el.dataset.groupIndex);
-        const taskIndex = Number(el.dataset.taskIndex);
-        const task = state.groups[groupIndex].tasks[taskIndex];
-        const rect = el.getBoundingClientRect();
-        showTooltip(dragLabel(task), rect.left + rect.width / 2, rect.top);
-      });
-      el.addEventListener("mouseleave", () => {
-        if (!state.activeDrag) hideTooltip();
-      });
-    });
-  }
+  });
 
   saveBtn.addEventListener("click", () => {
     saveToLocalStorage();
@@ -1023,6 +1083,8 @@ button:hover{
   resetBtn.addEventListener("click", () => {
     localStorage.removeItem(STORAGE_KEY);
     state.groups = deepClone(initialGroups);
+    state.selected = null;
+    state.phaseFilter = "ALL";
     render();
   });
 
